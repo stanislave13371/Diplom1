@@ -1,8 +1,8 @@
 package test;
 
-import PageObjects.BasePage;
-import PageObjects.LoginPage;
-import PageObjects.RegisterPage;
+import page.object.BasePage;
+import page.object.LoginPage;
+import page.object.RegisterPage;
 import io.qameta.allure.Description;
 import org.junit.Test;
 

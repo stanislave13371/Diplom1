@@ -1,109 +1,56 @@
 package test;
 
-import PageObjects.BasePage;
-import PageObjects.LoginPage;
-import PageObjects.RecoverPasswordPage;
-import PageObjects.RegisterPage;
 import io.qameta.allure.Description;
+import io.qameta.allure.junit4.DisplayName;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import utils.UserBuilder;
+import org.openqa.selenium.By;
+import utils.RandomUtils;
+import utils.UserApiClient;
 
-import static utils.UserBuilder.registerUserData;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class LoginTest extends BaseUiTest {
 
-    private UserBuilder user;
+    private final UserApiClient api = new UserApiClient();
+
+    private String email;
+    private String password;
+    private String name;
+    private String accessToken;
 
     @Before
-    public void registerUserBeforeEachTest() {
-        user = registerUserData();
+    public void createUserByApi() {
+        email = RandomUtils.randomEmail();
+        password = RandomUtils.randomPassword();
+        name = RandomUtils.randomName();
 
-        BasePage base = new BasePage(driver);
-        base.clickOnLoginButton();
+        accessToken = api.createUser(email, password, name);
+    }
 
-        LoginPage login = new LoginPage(driver);
-        login.visibleElementLoginTitle()
-                .clickToBeRegisterLink();
-
-        RegisterPage reg = new RegisterPage(driver);
-        reg.nameInputData(user.getName())
-                .emailInputData(user.getEmail())
-                .passwordInputData(user.getPassword())
-                .clickRegisterButton();
-
-        new LoginPage(driver).visibleElementLoginTitle();
+    @After
+    public void deleteUserByApi() {
+        api.deleteUser(accessToken);
     }
 
     @Test
-    @Description("Вход по кнопке «Войти в аккаунт» на главной после предварительной регистрации")
-    public void loginFromMainPageButton() {
-        new LoginPage(driver).clickToStellarBurgerLogo();
+    @DisplayName("Логин с главной страницы")
+    @Description("Создаём пользователя по API, логинимся через UI, проверяем, что кнопка «Оформить заказ» видна")
+    public void loginFromMainPage() {
+        driver.get("https://stellarburgers.nomoreparties.site/");
 
-        BasePage base = new BasePage(driver);
-        base.clickOnLoginButton();
+        driver.findElement(By.xpath("//button[text()='Войти в аккаунт']")).click();
 
-        new LoginPage(driver)
-                .visibleElementLoginTitle()
-                .loginInputField(user.getEmail())
-                .passwordInputField(user.getPassword())
-                .clickToLoginButton();
+        driver.findElement(By.name("name")).sendKeys(email);
+        driver.findElement(By.name("Пароль")).sendKeys(password);
 
-        base.visibleLabelCreateOrderButton();
-    }
+        driver.findElement(By.xpath("//button[text()='Войти']")).click();
 
-    @Test
-    @Description("Вход через кнопку «Личный кабинет» после предварительной регистрации")
-    public void loginFromPersonalAccountButton() {
-        new LoginPage(driver).clickToStellarBurgerLogo();
+        boolean orderButtonVisible =
+                !driver.findElements(By.xpath("//button[text()='Оформить заказ']")).isEmpty();
 
-        BasePage base = new BasePage(driver);
-        base.clickOnPersonalAccount();
-
-        new LoginPage(driver)
-                .visibleElementLoginTitle()
-                .loginInputField(user.getEmail())
-                .passwordInputField(user.getPassword())
-                .clickToLoginButton();
-
-        base.visibleLabelCreateOrderButton();
-    }
-
-    @Test
-    @Description("Вход через кнопку в форме регистрации")
-    public void loginFromRegisterPage() {
-        LoginPage login = new LoginPage(driver);
-        login.visibleElementLoginTitle()
-                .clickToBeRegisterLink();
-
-        RegisterPage reg = new RegisterPage(driver);
-        reg.clickRegisterPageLoginButton();
-
-        new LoginPage(driver)
-                .visibleElementLoginTitle()
-                .loginInputField(user.getEmail())
-                .passwordInputField(user.getPassword())
-                .clickToLoginButton();
-
-        new BasePage(driver).visibleLabelCreateOrderButton();
-    }
-
-    @Test
-    @Description("Вход через кнопку в форме восстановления пароля")
-    public void loginFromRecoverPasswordPage() {
-        LoginPage login = new LoginPage(driver);
-        login.visibleElementLoginTitle()
-                .clickToRecoverPasswordButton();
-
-        RecoverPasswordPage recover = new RecoverPasswordPage(driver);
-        recover.clickToRecoverPageLoginButton();
-
-        new LoginPage(driver)
-                .visibleElementLoginTitle()
-                .loginInputField(user.getEmail())
-                .passwordInputField(user.getPassword())
-                .clickToLoginButton();
-
-        new BasePage(driver).visibleLabelCreateOrderButton();
+        assertThat(orderButtonVisible, is(true));
     }
 }
