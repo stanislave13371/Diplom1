@@ -1,48 +1,18 @@
 package steps;
 
-import io.restassured.http.ContentType;
+import api.Endpoints;
+import io.qameta.allure.Step;
 import io.restassured.response.ValidatableResponse;
-import model.User;
-import model.Credentials;
-
-import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 
-public class UserSteps {
+public class UserSteps extends BaseApi {
 
-    public ValidatableResponse register(User user) {
-        return given()
-                .contentType(ContentType.JSON)
-                .body(user)
-                .when()
-                .post("/api/auth/register")
-                .then();
-    }
-
-    public ValidatableResponse login(Credentials creds) {
-        return given()
-                .contentType(ContentType.JSON)
-                .body(creds)
-                .when()
-                .post("/api/auth/login")
-                .then();
-    }
-
-    public ValidatableResponse logout(String refreshToken) {
-        return given()
-                .contentType(ContentType.JSON)
-                .body(Map.of("token", refreshToken))
-                .when()
-                .post("/api/auth/logout")
-                .then();
-    }
-
-    public ValidatableResponse delete(String accessTokenWithBearer) {
-        return given()
-                .header("Authorization", accessTokenWithBearer)
-                .when()
-                .delete("/api/auth/user")
+    @Step("Удалить пользователя (по accessToken)")
+    public ValidatableResponse delete(String accessToken) {
+        return given().spec(spec())
+                .header("Authorization", accessToken)
+                .when().delete(Endpoints.USER)
                 .then();
     }
 }

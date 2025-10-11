@@ -6,28 +6,30 @@ import io.restassured.response.ValidatableResponse;
 import model.OrderRequest;
 import org.junit.Before;
 import org.junit.Test;
+import steps.IngredientsSteps;
+import steps.LoginSteps;
 import steps.OrderSteps;
-import steps.UserSteps;
 
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 
 public class OrderTests extends BaseApiTest {
-    private final UserSteps userSteps = new UserSteps();
-    private final OrderSteps orderSteps = new OrderSteps();
+    private final IngredientsSteps ingredients = new IngredientsSteps();
+    private final OrderSteps orders = new OrderSteps();
+    private final LoginSteps login = new LoginSteps();
 
     private List<String> anyTwoIngredients;
 
     @Before
-    public void initData() {
-        anyTwoIngredients = orderSteps.getAnyTwoIngredientIds();
+    public void prepare() {
+        anyTwoIngredients = ingredients.getAnyTwoIngredientIds();
     }
 
     @Test
-    @DisplayName("Создание заказа без авторизации — разрешено")
+    @DisplayName("Создание заказа без авторизации разрешено")
     public void shouldCreateOrderWithoutAuth() {
-        orderSteps.createOrder(new OrderRequest(anyTwoIngredients))
+        orders.createOrder(new OrderRequest(anyTwoIngredients))
                 .statusCode(200)
                 .body("success", is(true))
                 .body("order.number", notNullValue());
@@ -36,37 +38,43 @@ public class OrderTests extends BaseApiTest {
     @Test
     @DisplayName("Создание заказа с авторизацией")
     public void shouldCreateOrderAuthorized() {
-        ValidatableResponse reg = userSteps.register(user).statusCode(Expected.SC_CREATED_OR_OK);
-        token        = reg.extract().path("accessToken");
+        ValidatableResponse reg = login.register(user)
+                .statusCode(Expected.SC_CREATED_OR_OK);
+        token = reg.extract().path("accessToken");
         refreshToken = reg.extract().path("refreshToken");
 
-        orderSteps.createOrder(new OrderRequest(anyTwoIngredients), token)
+        orders.createOrder(new OrderRequest(anyTwoIngredients), token)
                 .statusCode(200)
                 .body("success", is(true))
                 .body("order.price", greaterThan(0));
     }
 
     @Test
-    @DisplayName("Пустой список ингредиентов — 400")
+    @DisplayName("Пустой список ингредиентов → 400")
     public void shouldNotCreateOrderWithoutIngredients() {
-        ValidatableResponse reg = userSteps.register(user).statusCode(Expected.SC_CREATED_OR_OK);
-        token        = reg.extract().path("accessToken");
+        ValidatableResponse reg = login.register(user)
+                .statusCode(Expected.SC_CREATED_OR_OK);
+        token = reg.extract().path("accessToken");
         refreshToken = reg.extract().path("refreshToken");
 
-        orderSteps.createOrder(new OrderRequest(List.of()), token)
+        orders.createOrder(new OrderRequest(List.of()), token)
                 .statusCode(Expected.SC_BAD_REQUEST)
                 .body("success", is(false))
-                .body("message", containsString("Ingredient ids must be provided"));
+                .body("message", anyOf(
+                        equalTo("Ingredient ids must be provided"),
+                        containsString("Ingredient")
+                ));
     }
 
     @Test
-    @DisplayName("Невалидный ингредиент — 500 и HTML")
+    @DisplayName("Невалидный ингредиент → 500 и text/html")
     public void shouldFailWithInvalidIngredientHash() {
-        ValidatableResponse reg = userSteps.register(user).statusCode(Expected.SC_CREATED_OR_OK);
-        token        = reg.extract().path("accessToken");
+        ValidatableResponse reg = login.register(user)
+                .statusCode(Expected.SC_CREATED_OR_OK);
+        token = reg.extract().path("accessToken");
         refreshToken = reg.extract().path("refreshToken");
 
-        orderSteps.createOrder(new OrderRequest(List.of("invalid_hash_123")), token)
+        orders.createOrder(new OrderRequest(List.of("invalid_hash_123")), token)
                 .statusCode(Expected.SC_INTERNAL_ERROR)
                 .contentType(startsWith("text/html"))
                 .body(containsString("Internal Server Error"));

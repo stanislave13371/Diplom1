@@ -9,7 +9,8 @@ import java.util.UUID;
 public final class TestData {
     private static final Faker FAKER = Faker.instance(new Locale("en"));
 
-    private TestData() {}
+    private TestData() {
+    }
 
     public static User randomUser() {
         String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8);

@@ -1,23 +1,20 @@
 package support;
 
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import io.restassured.RestAssured;
 
-public class ApiSpec {
+public final class ApiSpec {
+    private static final RequestSpecification SPEC = new RequestSpecBuilder()
+            .setBaseUri(Config.BASE_URI)
+            .setBasePath(Config.API_BASE_PATH)
+            .setContentType(ContentType.JSON)
+            .build();
 
-    public static RequestSpecification json() {
-        String base = System.getProperty("apiBase", "https://stellarburgers.nomoreparties.site");
-        RestAssured.useRelaxedHTTPSValidation(); // на всякий случай
-        return new RequestSpecBuilder()
-                .setBaseUri(base)
-                .setBasePath("/api")
-                .setContentType(ContentType.JSON)
-                .log(LogDetail.METHOD)
-                .log(LogDetail.URI)
-                .log(LogDetail.BODY)
-                .build();
+    private ApiSpec() {
+    }
+
+    public static RequestSpecification request() {
+        return SPEC;
     }
 }

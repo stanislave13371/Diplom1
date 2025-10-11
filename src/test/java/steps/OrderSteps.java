@@ -1,63 +1,28 @@
 package steps;
 
-import io.restassured.http.ContentType;
+import api.Endpoints;
+import io.qameta.allure.Step;
 import io.restassured.response.ValidatableResponse;
 import model.OrderRequest;
 
-import java.util.List;
-import java.util.Map;
-
 import static io.restassured.RestAssured.given;
 
-public class OrderSteps {
+public class OrderSteps extends BaseApi {
 
-    @SuppressWarnings("unchecked")
-    public List<String> getAnyTwoIngredientIds() {
-        return given()
-                .accept(ContentType.JSON)
-                .when()
-                .get("/api/ingredients")
-                .then()
-                .statusCode(200)
-                .extract()
-                .path("data.findAll { it._id }.collect{ it._id }.subList(0,2)");
-    }
-
-    public ValidatableResponse createOrder(OrderRequest request) {
-        return given()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/orders")
+    @Step("Создать заказ (без авторизации)")
+    public ValidatableResponse createOrder(OrderRequest order) {
+        return given().spec(spec())
+                .body(order)
+                .when().post(Endpoints.ORDERS)
                 .then();
     }
 
-    public ValidatableResponse createOrder(OrderRequest request, String accessTokenWithBearer) {
-        return given()
-                .header("Authorization", accessTokenWithBearer)
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/orders")
-                .then();
-    }
-
-    public ValidatableResponse createOrder(List<String> ingredientIds) {
-        return given()
-                .contentType(ContentType.JSON)
-                .body(Map.of("ingredients", ingredientIds))
-                .when()
-                .post("/api/orders")
-                .then();
-    }
-
-    public ValidatableResponse createOrder(List<String> ingredientIds, String accessTokenWithBearer) {
-        return given()
-                .header("Authorization", accessTokenWithBearer)
-                .contentType(ContentType.JSON)
-                .body(Map.of("ingredients", ingredientIds))
-                .when()
-                .post("/api/orders")
+    @Step("Создать заказ (c авторизацией)")
+    public ValidatableResponse createOrder(OrderRequest order, String accessToken) {
+        return given().spec(spec())
+                .header("Authorization", accessToken)
+                .body(order)
+                .when().post(Endpoints.ORDERS)
                 .then();
     }
 }
