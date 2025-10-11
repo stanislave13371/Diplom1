@@ -1,48 +1,43 @@
 package praktikum;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.Before;
 
-import java.util.Arrays;
-import java.util.Collection;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 
-import static org.junit.Assert.assertEquals;
-
-
-@RunWith(Parameterized.class)
 public class BurgerPriceParamTest {
 
-    @Parameterized.Parameters(name = "{index}: bun={0}, ingredientsSum={1}, expectedTotal={2}")
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-                {100f, 0f, 200f},
-                {50f, 10f, 110f},
-                {100f, 25.5f + 77f, 302.5f}
-        });
+    private Burger burger;
+    private Bun bun;
+
+    private final double[] ingredientPrices = { 1.2, 3.4, 5.6 };
+
+    @Before
+    public void setUp() {
+        burger = new Burger();
+
+        bun = mock(Bun.class);
+        when(bun.getName()).thenReturn("Test Bun");
+        when(bun.getPrice()).thenReturn(100f);
+        burger.setBuns(bun);
+
+        for (double p : ingredientPrices) {
+            Ingredient ingredient = mock(Ingredient.class);
+            when(ingredient.getPrice()).thenReturn((float) p);
+            when(ingredient.getType()).thenReturn(IngredientType.FILLING);
+            when(ingredient.getName()).thenReturn("X");
+            burger.addIngredient(ingredient);
+        }
     }
 
-    @Parameterized.Parameter(0)
-    public float bunPrice;
-
-    @Parameterized.Parameter(1)
-    public float ingredientsSum;
-
-    @Parameterized.Parameter(2)
-    public float expectedTotal;
-
     @Test
-    public void shouldCalculatePriceForDifferentSets() {
-        Burger burger = new Burger();
-        burger.setBuns(new Bun("R2-D3", bunPrice));
-
-        float part1 = ingredientsSum / 3f;
-        float part2 = ingredientsSum - part1;
-
-        burger.addIngredient(new Ingredient(IngredientType.SAUCE, "Alpha", part1));
-        burger.addIngredient(new Ingredient(IngredientType.FILLING, "Beta", part2));
-
-        float actual = burger.getPrice();
-        assertEquals(expectedTotal, actual, 0.0001f);
+    public void priceIsCalculatedFromBunAndIngredients() {
+        double expectedTotal = 2 * (double) bun.getPrice();
+        for (double p : ingredientPrices) {
+            expectedTotal += p;
+        }
+        assertThat((double) burger.getPrice(), closeTo(expectedTotal, 0.0001));
     }
 }

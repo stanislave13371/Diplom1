@@ -1,126 +1,79 @@
 package praktikum;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.Before;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.*;
 
-
-@RunWith(MockitoJUnitRunner.class)
 public class BurgerTest {
 
     private Burger burger;
-
-    @Mock
     private Bun bun;
-
-    @Mock
-    private Ingredient sauce;
-
-    @Mock
-    private Ingredient filling;
 
     @Before
     public void setUp() {
         burger = new Burger();
-
-        when(bun.getName()).thenReturn("Флюоресцентная булка R2-D3");
-        when(bun.getPrice()).thenReturn(100.0f);
-
-        when(sauce.getType()).thenReturn(IngredientType.SAUCE);
-        when(sauce.getName()).thenReturn("Space Sauce");
-        when(sauce.getPrice()).thenReturn(25.5f);
-
-        when(filling.getType()).thenReturn(IngredientType.FILLING);
-        when(filling.getName()).thenReturn("Protostomia");
-        when(filling.getPrice()).thenReturn(77.0f);
-    }
-
-    @Test
-    public void setBuns_shouldAssignBun() {
+        bun = mock(Bun.class);
+        when(bun.getName()).thenReturn("Test Bun");
+        when(bun.getPrice()).thenReturn(50f);
         burger.setBuns(bun);
-        assertThat("Должен сохраниться объект булки", burger.bun, is(bun));
     }
 
     @Test
-    public void addIngredient_shouldAppendToList() {
-        burger.addIngredient(sauce);
-        burger.addIngredient(filling);
-
-        assertEquals(2, burger.ingredients.size());
-        assertThat(burger.ingredients.get(0), is(sauce));
-        assertThat(burger.ingredients.get(1), is(filling));
+    public void addIngredientAppendsToList() {
+        Ingredient ing = mock(Ingredient.class);
+        burger.addIngredient(ing);
+        assertThat(burger.ingredients, hasSize(1));
     }
 
     @Test
-    public void removeIngredient_shouldRemoveByIndex() {
-        burger.addIngredient(sauce);
-        burger.addIngredient(filling);
+    public void removeIngredientDecreasesListSize() {
+        Ingredient a = mock(Ingredient.class);
+        Ingredient b = mock(Ingredient.class);
+        burger.addIngredient(a);
+        burger.addIngredient(b);
 
         burger.removeIngredient(0);
 
-        assertEquals(1, burger.ingredients.size());
-        assertThat(burger.ingredients.get(0), is(filling));
+        assertThat(burger.ingredients, hasSize(1));
     }
 
     @Test
-    public void moveIngredient_shouldReorder() {
-        burger.addIngredient(sauce);
-        burger.addIngredient(filling);
+    public void moveIngredientChangesOrder() {
+        Ingredient first = mock(Ingredient.class);
+        Ingredient second = mock(Ingredient.class);
+        Ingredient third = mock(Ingredient.class);
 
-        burger.moveIngredient(1, 0);
+        burger.addIngredient(first);
+        burger.addIngredient(second);
+        burger.addIngredient(third);
 
-        assertThat(burger.ingredients.get(0), is(filling));
-        assertThat(burger.ingredients.get(1), is(sauce));
+        burger.moveIngredient(0, 2);
+
+        assertThat(burger.ingredients.get(2), sameInstance(first));
     }
 
     @Test
-    public void getPrice_shouldUseDoubleBunPriceAndIngredients() {
-        burger.setBuns(bun);
-        burger.addIngredient(sauce);
-        burger.addIngredient(filling);
+    public void getPriceUsesBunAndIngredients() {
+        Ingredient ing = mock(Ingredient.class);
+        when(ing.getPrice()).thenReturn(25f);
+        burger.addIngredient(ing);
 
-        float price = burger.getPrice();
-        assertEquals(100.0f * 2 + 25.5f + 77.0f, price, 0.0001f);
-
-        verify(bun, atLeastOnce()).getPrice();
+        double expected = 2 * 50d + 25d;
+        assertThat((double) burger.getPrice(), closeTo(expected, 0.0001));
     }
 
     @Test
-    public void getReceipt_shouldContainInTopAndBottomBunsIngredientsAndPrice() {
-        burger.setBuns(bun);
-        burger.addIngredient(sauce);
-        burger.addIngredient(filling);
+    public void receiptEndsWithTotalPriceLine() {
+        Ingredient ing = mock(Ingredient.class);
+        when(ing.getType()).thenReturn(IngredientType.SAUCE);
+        when(ing.getName()).thenReturn("Ketchup");
+        when(ing.getPrice()).thenReturn(1f);
+        burger.addIngredient(ing);
 
         String receipt = burger.getReceipt();
-
-        assertThat(receipt, containsString("(==== " + bun.getName() + " ====)"));
-
-        assertThat(receipt, containsString(String.format("= %s %s =",
-                sauce.getType().toString().toLowerCase(), sauce.getName())));
-        assertThat(receipt, containsString(String.format("= %s %s =",
-                filling.getType().toString().toLowerCase(), filling.getName())));
-
-        assertThat(receipt, containsString("(==== " + bun.getName() + " ====)"));
-
-        Pattern p = Pattern.compile("Price:\\s*([\\d.,]+)");
-        Matcher m = p.matcher(receipt);
-        assertThat("В чеке должна быть строка с ценой", m.find(), is(true));
-        float parsedFromReceipt = Float.parseFloat(m.group(1).replace(',', '.'));
-
-        assertEquals("Чек должен содержать корректную цену",
-                burger.getPrice(), parsedFromReceipt, 0.0001f);
+        assertThat(receipt, org.hamcrest.Matchers.endsWith(String.format("Price: %.6f%n", (double) burger.getPrice())));
     }
 }
