@@ -73,7 +73,21 @@ public class BurgerTest {
         when(ing.getPrice()).thenReturn(1f);
         burger.addIngredient(ing);
 
-        String receipt = burger.getReceipt();
-        assertThat(receipt, org.hamcrest.Matchers.endsWith(String.format("Price: %.6f%n", (double) burger.getPrice())));
+        double expectedPrice = 2 * (double) bun.getPrice()
+                + burger.ingredients.stream()
+                .mapToDouble(i -> (double) i.getPrice())
+                .sum();
+
+        StringBuilder expected = new StringBuilder();
+        expected.append(String.format("(==== %s ====)%n", bun.getName()));
+        for (Ingredient i : burger.ingredients) {
+            expected.append(String.format("= %s %s =%n",
+                    i.getType().toString().toLowerCase(),
+                    i.getName()));
+        }
+        expected.append(String.format("(==== %s ====)%n", bun.getName()));
+        expected.append(String.format("%nPrice: %f%n", expectedPrice));
+
+        assertThat(burger.getReceipt(), is(expected.toString()));
     }
 }
