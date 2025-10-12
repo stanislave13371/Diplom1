@@ -1,16 +1,15 @@
 package api.tests;
 
-import api.Expected;
 import api.TestData;
+import api.Expected;
 import io.restassured.RestAssured;
 import model.User;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
+import org.junit.*;
 import steps.LoginSteps;
 import steps.UserSteps;
 
 import java.net.InetAddress;
+import java.net.URI;
 
 public abstract class BaseApiTest {
     protected final UserSteps userSteps = new UserSteps();
@@ -20,31 +19,31 @@ public abstract class BaseApiTest {
     protected String token;
     protected String refreshToken;
 
-    @Before
-    public void setUp() {
-        RestAssured.useRelaxedHTTPSValidation();
-        user = TestData.randomUser();
-        token = null;
-        refreshToken = null;
+    @BeforeClass
+    public static void apiReachableOrSkip() {
         try {
-            InetAddress.getByName("stellarburgers.nomoreparties.site");
+            String host = new URI(System.getProperty("baseUri", "https://stellarburgers.education-services.ru")).getHost();
+            InetAddress.getByName(host);
         } catch (Exception e) {
             Assume.assumeTrue("API недоступен: " + e.getMessage(), false);
         }
     }
 
+    @Before
+    public void setUp() {
+        RestAssured.baseURI = System.getProperty("baseUri", "https://stellarburgers.education-services.ru");
+        user = TestData.randomUser();
+        token = null;
+        refreshToken = null;
+    }
+
     @After
     public void tearDown() {
-        try {
-            if (refreshToken != null) {
-                loginSteps.logout(refreshToken)
-                        .statusCode(Expected.SC_OK_OR_ACCEPTED);
-            }
-        } finally {
-            if (token != null) {
-                userSteps.delete(token)
-                        .statusCode(Expected.SC_OK_OR_ACCEPTED);
-            }
+        if (refreshToken != null) {
+            loginSteps.logout(refreshToken).statusCode(Expected.SC_OK_OR_ACCEPTED);
+        }
+        if (token != null) {
+            userSteps.delete(token).statusCode(Expected.SC_OK_OR_ACCEPTED);
         }
     }
 }

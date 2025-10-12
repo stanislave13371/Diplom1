@@ -24,6 +24,10 @@ public class OrderTests extends BaseApiTest {
     @Before
     public void prepare() {
         anyTwoIngredients = ingredients.getAnyTwoIngredientIds();
+
+        ValidatableResponse reg = login.register(user).statusCode(Expected.SC_CREATED_OR_OK);
+        token = reg.extract().path("accessToken");
+        refreshToken = reg.extract().path("refreshToken");
     }
 
     @Test
@@ -38,11 +42,6 @@ public class OrderTests extends BaseApiTest {
     @Test
     @DisplayName("Создание заказа с авторизацией")
     public void shouldCreateOrderAuthorized() {
-        ValidatableResponse reg = login.register(user)
-                .statusCode(Expected.SC_CREATED_OR_OK);
-        token = reg.extract().path("accessToken");
-        refreshToken = reg.extract().path("refreshToken");
-
         orders.createOrder(new OrderRequest(anyTwoIngredients), token)
                 .statusCode(200)
                 .body("success", is(true))
@@ -52,11 +51,6 @@ public class OrderTests extends BaseApiTest {
     @Test
     @DisplayName("Пустой список ингредиентов → 400")
     public void shouldNotCreateOrderWithoutIngredients() {
-        ValidatableResponse reg = login.register(user)
-                .statusCode(Expected.SC_CREATED_OR_OK);
-        token = reg.extract().path("accessToken");
-        refreshToken = reg.extract().path("refreshToken");
-
         orders.createOrder(new OrderRequest(List.of()), token)
                 .statusCode(Expected.SC_BAD_REQUEST)
                 .body("success", is(false))
@@ -69,11 +63,6 @@ public class OrderTests extends BaseApiTest {
     @Test
     @DisplayName("Невалидный ингредиент → 500 и text/html")
     public void shouldFailWithInvalidIngredientHash() {
-        ValidatableResponse reg = login.register(user)
-                .statusCode(Expected.SC_CREATED_OR_OK);
-        token = reg.extract().path("accessToken");
-        refreshToken = reg.extract().path("refreshToken");
-
         orders.createOrder(new OrderRequest(List.of("invalid_hash_123")), token)
                 .statusCode(Expected.SC_INTERNAL_ERROR)
                 .contentType(startsWith("text/html"))

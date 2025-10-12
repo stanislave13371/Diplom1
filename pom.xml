@@ -24,7 +24,6 @@
         <faker.version>1.0.2</faker.version>
         <allure.version>2.24.0</allure.version>
         <surefire.version>3.2.5</surefire.version>
-        <jacoco.version>0.8.11</jacoco.version>
     </properties>
 
     <dependencies>
@@ -68,6 +67,7 @@
             <version>${allure.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-rest-assured</artifactId>
@@ -126,27 +126,6 @@
                         <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
                     </systemPropertyVariables>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
-                <executions>
-                    <execution>
-                        <id>prepare-agent</id>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>

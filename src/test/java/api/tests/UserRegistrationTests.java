@@ -40,7 +40,6 @@ public class UserRegistrationTests extends BaseApiTest {
                 ));
     }
 
-
     @Test
     @DisplayName("Регистрация без почты (email) -> 403")
     public void shouldNotCreateWithoutEmail() {
@@ -67,6 +66,23 @@ public class UserRegistrationTests extends BaseApiTest {
                 .build();
 
         login.register(noPassword)
+                .statusCode(Expected.SC_FORBIDDEN)
+                .body("success", is(false))
+                .body("message", anyOf(
+                        equalTo("Email, password and name are required fields"),
+                        containsString("required")
+                ));
+    }
+
+    @Test
+    @DisplayName("Регистрация без имени -> 403")
+    public void shouldNotCreateWithoutName() {
+        User noName = User.builder()
+                .email(user.getEmail())
+                .password(user.getPassword())
+                .build();
+
+        login.register(noName)
                 .statusCode(Expected.SC_FORBIDDEN)
                 .body("success", is(false))
                 .body("message", anyOf(

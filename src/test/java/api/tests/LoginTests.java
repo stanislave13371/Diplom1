@@ -4,6 +4,7 @@ import api.Expected;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.ValidatableResponse;
 import model.Credentials;
+import org.junit.Before;
 import org.junit.Test;
 import steps.LoginSteps;
 
@@ -12,16 +13,18 @@ import static org.hamcrest.Matchers.*;
 public class LoginTests extends BaseApiTest {
     private final LoginSteps login = new LoginSteps();
 
-    @Test
-    @DisplayName("Логин существующего пользователя")
-    public void shouldLoginExistingUser() {
+    @Before
+    public void createUser() {
         ValidatableResponse reg = login.register(user)
                 .statusCode(Expected.SC_CREATED_OR_OK)
                 .body("success", is(true));
-
         token = reg.extract().path("accessToken");
         refreshToken = reg.extract().path("refreshToken");
+    }
 
+    @Test
+    @DisplayName("Логин существующего пользователя")
+    public void shouldLoginExistingUser() {
         login.login(Credentials.builder()
                         .email(user.getEmail())
                         .password(user.getPassword())
@@ -34,10 +37,6 @@ public class LoginTests extends BaseApiTest {
     @Test
     @DisplayName("Логин с неверными данными -> 401 и точное сообщение")
     public void shouldFailLoginWrongCreds() {
-        token = login.register(user)
-                .statusCode(Expected.SC_CREATED_OR_OK)
-                .extract().path("accessToken");
-
         login.login(Credentials.builder()
                         .email(user.getEmail())
                         .password("wrongPass123")
