@@ -2,36 +2,43 @@ package test;
 
 import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.containsString;
-
+import org.junit.*;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import page.object.BasePage;
 import page.object.LoginPage;
-import page.object.RegisterPage;
 import page.object.RecoverPasswordPage;
+import page.object.RegisterPage;
 import utils.RandomUtils;
 import utils.UserApiClient;
+
+import java.time.Duration;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 
 public class LoginTest extends BaseUiTest {
 
     private final UserApiClient api = new UserApiClient();
-
     private String email;
     private String password;
     private String name;
     private String accessToken;
 
+    private final String baseUrl = System.getProperty("baseUrl",
+            "https://stellarburgers.education-services.ru/");
+
     @Before
     public void createUserViaApi() {
-        name = RandomUtils.randomName();
         email = RandomUtils.randomEmail();
         password = RandomUtils.randomPassword();
-        accessToken = api.createUser(name, email, password);
+        name = RandomUtils.randomName();
+
+        accessToken = api.createUser(email, password, name);
+
+        Assume.assumeTrue("API недоступно: пользователь не создан", accessToken != null);
     }
 
     @After
@@ -41,80 +48,86 @@ public class LoginTest extends BaseUiTest {
         }
     }
 
-    private void completeLoginOnLoginPage() {
-        LoginPage login = new LoginPage(driver);
-        login.visibleElementLoginTitle()
-                .loginInputField(email)
-                .passwordInputField(password)
-                .clickToLoginButton();
-
-    }
-
     @Test
     @DisplayName("Вход по кнопке «Войти в аккаунт» на главной")
-    @Description("Кликаем «Войти в аккаунт» на главной, вводим валидные данные и убеждаемся, что ушли со страницы /login")
+    @Description("Главная → Войти в аккаунт → логин по email+password → редирект с /login")
     public void loginFromMainEnterButton() {
-        BasePage base = new BasePage(driver);
-        base.clickOnLoginButton();
+        new BasePage(driver).clickOnLoginButton();
 
-        LoginPage login = new LoginPage(driver);
-        login.visibleElementLoginTitle()
+        new LoginPage(driver)
+                .visibleElementLoginTitle()
                 .loginInputField(email)
                 .passwordInputField(password)
                 .clickToLoginButton();
 
-        assertThat("После логина не должны оставаться на странице /login",
-                driver.getCurrentUrl(), not(containsString("/login")));
+        assertLoggedIn();
     }
 
     @Test
-    @DisplayName("Логин через «Личный кабинет»")
-    @Description("Открываем «Личный кабинет» со главной, авторизуемся валидными данными; проверяем, что ушли с /login")
+    @DisplayName("Вход через кнопку «Личный кабинет»")
+    @Description("Хедер → «Личный кабинет» → логин → редирект с /login")
     public void loginFromPersonalAccount() {
-        BasePage base = new BasePage(driver);
-        base.clickOnPersonalAccount();
+        new BasePage(driver).clickOnPersonalAccount();
 
-        completeLoginOnLoginPage();
+        new LoginPage(driver)
+                .visibleElementLoginTitle()
+                .loginInputField(email)
+                .passwordInputField(password)
+                .clickToLoginButton();
 
-        assertThat("После успешного входа не должны оставаться на странице логина",
-                driver.getCurrentUrl(), not(containsString("/login")));
+        assertLoggedIn();
     }
 
     @Test
-    @DisplayName("Логин через ссылку на странице регистрации")
-    @Description("Переходим на логин через ссылку «Войти» на странице регистрации; авторизуемся; проверяем уход с /login")
+    @DisplayName("Вход через кнопку в форме регистрации")
+    @Description("Логин → ссылка «Зарегистрироваться» → на форме регистрации нажать «Войти» → логин → редирект с /login")
     public void loginFromRegisterPageLink() {
-        BasePage base = new BasePage(driver);
-        base.clickOnLoginButton();
+        new BasePage(driver).clickOnLoginButton();
 
-        LoginPage login = new LoginPage(driver);
-        login.clickToBeRegisterLink();
+        new LoginPage(driver)
+                .visibleElementLoginTitle()
+                .clickToBeRegisterLink();
 
-        RegisterPage reg = new RegisterPage(driver);
-        reg.clickRegisterPageLoginButton();
+        new RegisterPage(driver)
+                .clickRegisterPageLoginButton();
 
-        completeLoginOnLoginPage();
+        new LoginPage(driver)
+                .visibleElementLoginTitle()
+                .loginInputField(email)
+                .passwordInputField(password)
+                .clickToLoginButton();
 
-        assertThat("После успешного входа не должны оставаться на странице логина",
-                driver.getCurrentUrl(), not(containsString("/login")));
+        assertLoggedIn();
     }
 
     @Test
-    @DisplayName("Логин через ссылку на странице восстановления пароля")
-    @Description("Переходим на логин с экрана восстановления пароля; авторизуемся; проверяем уход с /login")
+    @DisplayName("Вход через кнопку в форме восстановления пароля")
+    @Description("Логин → «Восстановить пароль» → «Войти» → логин → редирект с /login")
     public void loginFromRecoverPasswordLink() {
-        BasePage base = new BasePage(driver);
-        base.clickOnLoginButton();
+        new BasePage(driver).clickOnLoginButton();
 
-        LoginPage login = new LoginPage(driver);
-        login.clickToRecoverPasswordButton();
+        new LoginPage(driver)
+                .visibleElementLoginTitle()
+                .clickToRecoverPasswordButton();
 
-        RecoverPasswordPage recover = new RecoverPasswordPage(driver);
-        recover.clickToRecoverPageLoginButton();
+        new RecoverPasswordPage(driver)
+                .clickToRecoverPageLoginButton();
 
-        completeLoginOnLoginPage();
+        new LoginPage(driver)
+                .visibleElementLoginTitle()
+                .loginInputField(email)
+                .passwordInputField(password)
+                .clickToLoginButton();
 
-        assertThat("После успешного входа не должны оставаться на странице логина",
+        assertLoggedIn();
+    }
+
+
+    private void assertLoggedIn() {
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.not(ExpectedConditions.urlContains("/login")));
+        assertThat("После входа не должны оставаться на /login",
                 driver.getCurrentUrl(), not(containsString("/login")));
+        assertThat(driver.getCurrentUrl(), containsString(baseUrl.replaceAll("/+$", "")));
     }
 }

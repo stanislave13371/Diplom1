@@ -82,7 +82,6 @@ public class RegisterPage {
 
     @Step("Получить текст ошибки пароля")
     public String getPasswordErrorMessageText() {
-        // на всякий случай ждём видимость (дублирует твой wait, но не мешает)
         wait.until(ExpectedConditions.visibilityOfElementLocated(passwordErrorMessage));
         return driver.findElement(passwordErrorMessage).getText().trim();
     }

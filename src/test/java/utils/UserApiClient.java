@@ -1,17 +1,18 @@
 package utils;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.qameta.allure.Step;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
 
 public class UserApiClient {
 
     private final String baseUri;
 
     public UserApiClient() {
-        this(System.getProperty("apiBaseUrl", "https://stellarburgers.education-services.ru"));
+        this("https://stellarburgers.education-services.ru");
     }
 
     public UserApiClient(String baseUri) {
@@ -38,46 +39,61 @@ public class UserApiClient {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TokenResponse {
         public boolean success;
         public String accessToken;
-        public String refreshToken;
     }
 
+    @Step("Регистрация пользователя по API: {email}")
     public String createUser(String email, String password, String name) {
-        TokenResponse resp = given()
-                .baseUri(baseUri)
-                .contentType(ContentType.JSON)
-                .body(new CreateUserRequest(email, password, name))
-                .post("/api/auth/register")
-                .then()
-                .statusCode(anyOf(is(200), is(201)))
-                .extract().as(TokenResponse.class);
+        try {
+            Response response = given()
+                    .baseUri(baseUri)
+                    .contentType(ContentType.JSON)
+                    .body(new CreateUserRequest(email, password, name))
+                    .post("/api/auth/register");
 
-        return resp != null ? resp.accessToken : null;
+            TokenResponse resp = response.as(TokenResponse.class);
+            if (resp != null && resp.success && resp.accessToken != null && !resp.accessToken.isEmpty()) {
+                return resp.accessToken;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
+    @Step("Логин по API: {email}")
     public String login(String email, String password) {
-        TokenResponse resp = given()
-                .baseUri(baseUri)
-                .contentType(ContentType.JSON)
-                .body(new LoginRequest(email, password))
-                .post("/api/auth/login")
-                .then()
-                .statusCode(anyOf(is(200), is(201)))
-                .extract().as(TokenResponse.class);
+        try {
+            Response response = given()
+                    .baseUri(baseUri)
+                    .contentType(ContentType.JSON)
+                    .body(new LoginRequest(email, password))
+                    .post("/api/auth/login");
 
-        return resp != null ? resp.accessToken : null;
+            TokenResponse resp = response.as(TokenResponse.class);
+            if (resp != null && resp.success && resp.accessToken != null && !resp.accessToken.isEmpty()) {
+                return resp.accessToken;
+            }
+        } catch (Exception ignored) { }
+        return null;
     }
 
+    @Step("Удаление пользователя по API")
     public void deleteUser(String accessToken) {
         if (accessToken == null || accessToken.isEmpty()) return;
 
-        given()
-                .baseUri(baseUri)
-                .header("Authorization", accessToken)
-                .delete("/api/auth/user")
-                .then()
-                .statusCode(anyOf(is(200), is(202)));
+        String bearer = normalizeBearer(accessToken);
+        try {
+            given()
+                    .baseUri(baseUri)
+                    .header("Authorization", bearer)
+                    .delete("/api/auth/user");
+        } catch (Exception ignored) { }
+    }
+
+    private static String normalizeBearer(String token) {
+        return token.startsWith("Bearer ") ? token : "Bearer " + token;
     }
 }

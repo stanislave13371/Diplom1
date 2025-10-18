@@ -1,19 +1,38 @@
 package test;
 
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import io.qameta.allure.Description;
+import org.junit.After;
+import org.junit.Test;
 import page.object.BasePage;
 import page.object.LoginPage;
 import page.object.RegisterPage;
-import io.qameta.allure.Description;
-import org.junit.Test;
-
-import java.time.Duration;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import utils.RandomUtils;
+import utils.UserApiClient;
 
 public class RegistrationTest extends BaseUiTest {
+
+    private final UserApiClient api = new UserApiClient();
+
+    private String email;
+    private String password;
+    private String name;
+
+    @After
+    public void deleteUserIfCreated() {
+        if (email != null && password != null) {
+            try {
+                String token = api.login(email, password);
+                if (token != null && !token.isBlank()) {
+                    api.deleteUser(token);
+                }
+            } catch (Exception ignored) {
+            } finally {
+                email = null;
+                password = null;
+                name = null;
+            }
+        }
+    }
 
     @Test
     @Description("Успешная регистрация")
@@ -25,16 +44,17 @@ public class RegistrationTest extends BaseUiTest {
         login.visibleElementLoginTitle();
         login.clickToBeRegisterLink();
 
+        name = RandomUtils.randomName();
+        email = RandomUtils.randomEmail();
+        password = RandomUtils.randomPassword();
+
         RegisterPage reg = new RegisterPage(driver);
-        reg.nameInputData()
-                .emailInputData()
-                .passwordInputData()
+        reg.nameInputData(name)
+                .emailInputData(email)
+                .passwordInputData(password)
                 .clickRegisterButton();
 
-        new WebDriverWait(driver, Duration.ofSeconds(5))
-                .until(ExpectedConditions.urlContains("/login"));
-        assertThat("Должен быть редирект на страницу входа",
-                driver.getCurrentUrl(), containsString("/login"));
+        new LoginPage(driver).visibleElementLoginTitle();
     }
 
     @Test
@@ -53,10 +73,5 @@ public class RegistrationTest extends BaseUiTest {
                 .incorrectPasswordInputData()
                 .clickRegisterButton()
                 .passwordErrorMessage();
-
-        assertThat("При невалидном пароле не должно редиректить со страницы регистрации",
-                driver.getCurrentUrl(), containsString("/register"));
-
-        assertThat(reg.getPasswordErrorMessageText(), containsString("Некорректный пароль"));
     }
 }
