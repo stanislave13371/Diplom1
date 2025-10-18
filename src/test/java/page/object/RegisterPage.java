@@ -80,6 +80,13 @@ public class RegisterPage {
         return this;
     }
 
+    @Step("Получить текст ошибки пароля")
+    public String getPasswordErrorMessageText() {
+        // на всякий случай ждём видимость (дублирует твой wait, но не мешает)
+        wait.until(ExpectedConditions.visibilityOfElementLocated(passwordErrorMessage));
+        return driver.findElement(passwordErrorMessage).getText().trim();
+    }
+
     @Step("Перейти к форме входа со страницы регистрации")
     public RegisterPage clickRegisterPageLoginButton() {
         wait.until(ExpectedConditions.elementToBeClickable(registerPageLoginButton)).click();

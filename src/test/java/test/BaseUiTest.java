@@ -25,7 +25,7 @@ public class BaseUiTest {
     public void setUp() {
 
         String browser = System.getProperty("browser", "chrome");
-        String baseUrl = System.getProperty("baseUrl", "https://stellarburgers.nomoreparties.site/");
+        String baseUrl = System.getProperty("baseUrl", "https://stellarburgers.education-services.ru");
 
         driver = BrowserInit.startBrowser(browser);
 

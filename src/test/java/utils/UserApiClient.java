@@ -11,7 +11,7 @@ public class UserApiClient {
     private final String baseUri;
 
     public UserApiClient() {
-        this("https://stellarburgers.nomoreparties.site");
+        this(System.getProperty("apiBaseUrl", "https://stellarburgers.education-services.ru"));
     }
 
     public UserApiClient(String baseUri) {
@@ -51,7 +51,7 @@ public class UserApiClient {
                 .body(new CreateUserRequest(email, password, name))
                 .post("/api/auth/register")
                 .then()
-                .statusCode(200)
+                .statusCode(anyOf(is(200), is(201)))
                 .extract().as(TokenResponse.class);
 
         return resp != null ? resp.accessToken : null;
@@ -64,7 +64,7 @@ public class UserApiClient {
                 .body(new LoginRequest(email, password))
                 .post("/api/auth/login")
                 .then()
-                .statusCode(200)
+                .statusCode(anyOf(is(200), is(201)))
                 .extract().as(TokenResponse.class);
 
         return resp != null ? resp.accessToken : null;
@@ -78,6 +78,6 @@ public class UserApiClient {
                 .header("Authorization", accessToken)
                 .delete("/api/auth/user")
                 .then()
-                .statusCode(anyOf(is(202), is(200)));
+                .statusCode(anyOf(is(200), is(202)));
     }
 }
